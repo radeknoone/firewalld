@@ -17,9 +17,9 @@
       register: server_time
       changed_when: false
 
-    - name: Get online time (worldtimeapi.org)
+    - name: Get online time (time.google.com)
       ansible.builtin.uri:
-        url: https://worldtimeapi.org/api/ip
+        url: https://time.google.com
         method: GET
         return_content: yes
       register: worldtime
