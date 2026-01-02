@@ -9,6 +9,8 @@
       #!/usr/bin/env bash
       set -euo pipefail
       echo "Script běží na: $(hostname)"
+      ls -1 /tmp > /tmp/tmp_dir_list.txt
+      echo "Directory listing saved to /tmp/tmp_dir_list.txt on $(hostname)"
       echo "Čas: $(date -Iseconds)"
       echo "Uživatel: $(whoami)"
   tasks:
@@ -29,6 +31,12 @@
         - name: Print script STDOUT (multiline)
           ansible.builtin.debug:
             var: script_result.stdout_lines
+
+        - name: Fetch /tmp directory listing from server
+          ansible.builtin.fetch:
+            src: /tmp/tmp_dir_list.txt
+            dest: "{{ playbook_dir }}/tmp_dir_lists/{{ inventory_hostname }}_tmp_dir_list.txt"
+            flat: yes
 
         - name: Print script STDERR (if any, multiline)
           ansible.builtin.debug:
