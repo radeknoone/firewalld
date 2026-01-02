@@ -1,5 +1,5 @@
-# Tento playbook vypíše hostname a porovná čas s online zdrojem (worldclockapi.com)
 # oje
+# Tento playbook vypíše hostname a porovná čas s online zdrojem (worldclockapi.com)
 - name: Print hostname and compare time with online source
   hosts: all
   gather_facts: true
