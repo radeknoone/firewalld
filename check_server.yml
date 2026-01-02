@@ -3,16 +3,18 @@
   gather_facts: false
   vars:
     time_tolerance_seconds: 10
+
   tasks:
-    - name: Run hostname command
+    - name: Get hostname
       ansible.builtin.command: hostname
       register: hostname_out
+      changed_when: false
 
     - name: Show hostname
       ansible.builtin.debug:
         msg: "Hostname: {{ hostname_out.stdout }}"
 
-    - name: Get server time (epoch seconds)
+    - name: Get server time (epoch seconds, UTC)
       ansible.builtin.command: date -u +%s
       register: server_time
       changed_when: false
@@ -21,24 +23,22 @@
       ansible.builtin.uri:
         url: http://worldclockapi.com/api/json/utc/now
         method: GET
-        return_content: yes
+        return_content: true
       register: worldtime
       retries: 3
       delay: 2
       until: worldtime.status == 200
+      failed_when:
+        - worldtime.status != 200
+        - worldtime.json is not defined
+        - worldtime.json.currentFileTime is not defined
 
-    - name: Set online_epoch fact
-      ansible.builtin.set_fact:
-        online_epoch: "{{ (worldtime.json.currentFileTime | int // 10000000) - 11644473600 }}"
-
-    - name: Set server_epoch fact
+    - name: Compute epochs and time difference
       ansible.builtin.set_fact:
         server_epoch: "{{ server_time.stdout | int }}"
-
-    - name: Compute time difference
-      ansible.builtin.set_fact:
-        time_diff: "{{ server_epoch | int - online_epoch | int }}"
-        time_diff_abs: "{{ (server_epoch | int - online_epoch | int) | abs }}"
+        online_epoch: "{{ ((worldtime.json.currentFileTime | int) // 10000000) - 11644473600 }}"
+        time_diff: "{{ (server_time.stdout | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600) }}"
+        time_diff_abs: "{{ ((server_time.stdout | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600)) | abs | int }}"
 
     - name: Show time comparison
       ansible.builtin.debug:
@@ -51,5 +51,4 @@
     - name: Fail if time difference exceeds tolerance
       ansible.builtin.fail:
         msg: "Time difference ({{ time_diff_abs }}s) exceeds tolerance of {{ time_tolerance_seconds }}s"
-      when: time_diff_abs | int > time_tolerance_seconds
-
+      when: time_diff_abs | int > time_tolerance_seconds | int
