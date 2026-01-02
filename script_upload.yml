@@ -11,32 +11,30 @@
       echo "Čas: $(date -Iseconds)"
       echo "Uživatel: $(whoami)"
   tasks:
-    - name: Upload inline script to remote host
-      ansible.builtin.copy:
-        dest: "{{ script_path }}"
-        content: "{{ script_content }}"
-        mode: '0755'
+    - name: Upload, execute and print output; always clean up
+      block:
+        - name: Upload inline script to remote host
+          ansible.builtin.copy:
+            dest: "{{ script_path }}"
+            content: "{{ script_content }}"
+            mode: '0755'
 
-    - name: Execute the script
-      ansible.builtin.shell: "{{ script_path }}"
-      args:
-        executable: /bin/bash
-      register: script_result
+        - name: Execute the script
+          ansible.builtin.shell: "{{ script_path }}"
+          args:
+            executable: /bin/bash
+          register: script_result
 
-    - name: Print script STDOUT
-      ansible.builtin.debug:
-        msg: |
-          --- STDOUT ---
-          {{ script_result.stdout | default('') }}
+        - name: Print script STDOUT (multiline)
+          ansible.builtin.debug:
+            var: script_result.stdout_lines
 
-    - name: Print script STDERR (if any)
-      ansible.builtin.debug:
-        msg: |
-          --- STDERR ---
-          {{ script_result.stderr }}
-      when: (script_result.stderr | default('')) | length > 0
-
-    - name: Remove uploaded script
-      ansible.builtin.file:
-        path: "{{ script_path }}"
-        state: absent
+        - name: Print script STDERR (if any, multiline)
+          ansible.builtin.debug:
+            var: script_result.stderr_lines
+          when: (script_result.stderr_lines | default([])) | length > 0
+      always:
+        - name: Remove uploaded script
+          ansible.builtin.file:
+            path: "{{ script_path }}"
+            state: absent
