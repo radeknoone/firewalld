@@ -17,9 +17,9 @@
       register: server_time
       changed_when: false
 
-    - name: Get online time (time.google.com)
+    - name: Get online time (worldtimeapi.org)
       ansible.builtin.uri:
-        url: https://time.google.com
+        url: http://worldtimeapi.org/api/timezone/Etc/UTC
         method: GET
         return_content: yes
       register: worldtime
@@ -29,7 +29,7 @@
 
     - name: Set online_epoch fact
       ansible.builtin.set_fact:
-        online_epoch: "{{ worldtime.json.unixtime | int }}"
+        online_epoch: "{{ worldtime.json.unixtime }}"
 
     - name: Set server_epoch fact
       ansible.builtin.set_fact:
