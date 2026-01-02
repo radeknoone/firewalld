@@ -1,3 +1,4 @@
+# to jsem rad ze to funguje
 # Tento playbook vypíše hostname a porovná čas s online zdrojem (worldclockapi.com)
 # oje
 - name: Print hostname and compare time with online source
