@@ -1,0 +1,83 @@
+- name: Print hostname and compare time using chrony (recommended for AlmaLinux)
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    time_tolerance_seconds: 10
+    chrony_ntp_servers:
+      - time.google.com
+  tasks:
+    - name: Run hostname command
+      ansible.builtin.command: hostname
+      register: hostname_out
+      changed_when: false
+
+    - name: Show hostname
+      ansible.builtin.debug:
+        msg: "Hostname: {{ hostname_out.stdout }}"
+
+    - name: Install chrony
+      ansible.builtin.package:
+        name: chrony
+        state: present
+
+    - name: Ensure chrony service is enabled and started
+      ansible.builtin.service:
+        name: chronyd
+        enabled: true
+        state: started
+
+    - name: Configure chrony NTP servers (replace managed block)
+      ansible.builtin.blockinfile:
+        path: /etc/chrony.conf
+        marker: "# {mark} ANSIBLE MANAGED NTP SERVERS"
+        block: |
+          {% for s in chrony_ntp_servers %}
+          server {{ s }} iburst
+          {% endfor %}
+      notify: restart chronyd
+
+    - name: Wait for chrony to gather data
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Get chrony tracking info
+      ansible.builtin.command: chronyc tracking
+      register: chrony_tracking
+      changed_when: false
+
+    - name: Parse Last offset from chrony tracking output
+      ansible.builtin.set_fact:
+        chrony_last_offset: "{{ (chrony_tracking.stdout | regex_search('Last offset\\s*:\\s*([-+]?[0-9]*\\.?[0-9]+)', '\\1')) | default('0') | float }}"
+
+    - name: Get server epoch
+      ansible.builtin.command: date -u +%s
+      register: server_time
+      changed_when: false
+
+    - name: Compute and compare
+      ansible.builtin.set_fact:
+        server_epoch: "{{ server_time.stdout | int }}"
+        online_epoch: "{{ (server_epoch - chrony_last_offset) | int }}"
+        time_diff: "{{ server_epoch - online_epoch }}"
+        time_diff_abs: "{{ (server_epoch - online_epoch) | abs }}"
+
+    - name: Show chrony-based time comparison
+      ansible.builtin.debug:
+        msg:
+          - "Server epoch: {{ server_epoch }}"
+          - "Chrony last offset (local - remote): {{ chrony_last_offset }} s"
+          - "Derived online epoch: {{ online_epoch }}"
+          - "Difference (seconds): {{ time_diff }} (abs: {{ time_diff_abs }})"
+          - "Tolerance (seconds): {{ time_tolerance_seconds }}"
+
+    - name: Fail if time difference exceeds tolerance
+      ansible.builtin.fail:
+        msg: "Time difference ({{ time_diff_abs }}s) exceeds tolerance of {{ time_tolerance_seconds }}s"
+      when: time_diff_abs > time_tolerance_seconds
+
+  handlers:
+    - name: restart chronyd
+      ansible.builtin.service:
+        name: chronyd
+        state: restarted
