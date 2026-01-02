@@ -1,8 +1,55 @@
-# Original updated content for check_server.yml file
- # Existing logic here
-- name: Retrieve online time from timeapi.io
-  uri:
-    url: "https://timeapi.io/api/Time/current/zone?timeZone=UTC"
-    method: GET
- # Ensure content around remains same.
-     filter_updates intact.
+- name: Print hostname and compare time with online source
+  hosts: all
+  gather_facts: false
+  vars:
+    time_tolerance_seconds: 10
+  tasks:
+    - name: Run hostname command
+      ansible.builtin.command: hostname
+      register: hostname_out
+
+    - name: Show hostname
+      ansible.builtin.debug:
+        msg: "Hostname: {{ hostname_out.stdout }}"
+
+    - name: Get server time (epoch seconds)
+      ansible.builtin.command: date -u +%s
+      register: server_time
+      changed_when: false
+
+    - name: Get online time (worldtimeapi.org)
+      ansible.builtin.uri:
+        url: https://worldtimeapi.org/api/ip
+        method: GET
+        return_content: yes
+      register: worldtime
+      retries: 3
+      delay: 2
+      until: worldtime.status == 200
+
+    - name: Set online_epoch fact
+      ansible.builtin.set_fact:
+        online_epoch: "{{ worldtime.json.unixtime | int }}"
+
+    - name: Set server_epoch fact
+      ansible.builtin.set_fact:
+        server_epoch: "{{ server_time.stdout | int }}"
+
+    - name: Compute time difference
+      ansible.builtin.set_fact:
+        time_diff: "{{ server_epoch - online_epoch }}"
+        time_diff_abs: "{{ (server_epoch - online_epoch) | abs }}"
+
+    - name: Show time comparison
+      ansible.builtin.debug:
+        msg:
+          - "Server epoch: {{ server_epoch }}"
+          - "Online epoch: {{ online_epoch }}"
+          - "Difference (seconds): {{ time_diff }} (abs: {{ time_diff_abs }})"
+          - "Tolerance (seconds): {{ time_tolerance_seconds }}"
+
+    - name: Fail if time difference exceeds tolerance
+      ansible.builtin.fail:
+        msg: "Time difference ({{ time_diff_abs }}s) exceeds tolerance of {{ time_tolerance_seconds }}s"
+      when: time_diff_abs > time_tolerance_seconds
+
