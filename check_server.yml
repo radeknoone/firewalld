@@ -33,20 +33,13 @@
         - worldtime.json is not defined
         - worldtime.json.currentFileTime is not defined
 
-    - name: Compute epochs and time difference
+    - name: Compute time difference
       ansible.builtin.set_fact:
-        server_epoch: "{{ server_time.stdout | int }}"
-        online_epoch: "{{ ((worldtime.json.currentFileTime | int) // 10000000) - 11644473600 }}"
-        time_diff: "{{ (server_time.stdout | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600) }}"
-        time_diff_abs: "{{ ((server_time.stdout | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600)) | abs | int }}"
+        time_diff_abs: "{{ ((server_time.stdout | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600)) | abs }}"
 
     - name: Show time comparison
       ansible.builtin.debug:
-        msg:
-          - "Server epoch: {{ server_epoch }}"
-          - "Online epoch: {{ online_epoch }}"
-          - "Difference (seconds): {{ time_diff }} (abs: {{ time_diff_abs }})"
-          - "Tolerance (seconds): {{ time_tolerance_seconds }}"
+        msg: "Time difference (seconds): {{ time_diff_abs }} | Tolerance: {{ time_tolerance_seconds }}"
 
     - name: Fail if time difference exceeds tolerance
       ansible.builtin.fail:
