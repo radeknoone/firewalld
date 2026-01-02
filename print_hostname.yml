@@ -1,0 +1,58 @@
+- name: Print hostname and compare time with NTP server (time.google.com)
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    time_tolerance_seconds: 10
+    ntp_server: time.google.com
+  tasks:
+    - name: Run hostname command
+      ansible.builtin.command: hostname
+      register: hostname_out
+      changed_when: false
+
+    - name: Show hostname
+      ansible.builtin.debug:
+        msg: "Hostname: {{ hostname_out.stdout }}"
+
+    - name: Ensure ntpdate is installed
+      ansible.builtin.package:
+        name: ntpdate
+        state: present
+
+    - name: Get server time (epoch seconds)
+      ansible.builtin.command: date -u +%s
+      register: server_time
+      changed_when: false
+
+    - name: Query NTP server offset with ntpdate
+      ansible.builtin.command: ntpdate -q {{ ntp_server }}
+      register: ntpdate_out
+      changed_when: false
+
+    - name: Parse offset (local - remote) from ntpdate output
+      ansible.builtin.set_fact:
+        ntp_offset_seconds: "{{ (ntpdate_out.stdout | regex_search('offset\\s*([+-]?[0-9]*\\.?[0-9]+)', '\\1')) | default('0') | float }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Compute online epoch from server epoch and offset
+      ansible.builtin.set_fact:
+        server_epoch: "{{ server_time.stdout | int }}"
+        online_epoch: "{{ (server_epoch - ntp_offset_seconds) | int }}"
+        time_diff: "{{ server_epoch - online_epoch }}"
+        time_diff_abs: "{{ (server_epoch - online_epoch) | abs }}"
+
+    - name: Show time comparison
+      ansible.builtin.debug:
+        msg:
+          - "Server epoch: {{ server_epoch }}"
+          - "Online epoch (derived): {{ online_epoch }}"
+          - "Offset (ntp, local - remote): {{ ntp_offset_seconds }} s"
+          - "Difference (seconds): {{ time_diff }} (abs: {{ time_diff_abs }})"
+          - "Tolerance (seconds): {{ time_tolerance_seconds }}"
+
+    - name: Fail if time difference exceeds tolerance
+      ansible.builtin.fail:
+        msg: "Time difference ({{ time_diff_abs }}s) exceeds tolerance of {{ time_tolerance_seconds }}s"
+      when: time_diff_abs > time_tolerance_seconds
