@@ -1,4 +1,3 @@
-# Komentář: přidán na začátek souboru
 # Tento playbook vypíše hostname a porovná čas s online zdrojem (worldclockapi.com)
 - name: Print hostname and compare time with online source
   hosts: all
