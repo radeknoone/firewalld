@@ -1,0 +1,11 @@
+- name: Print hostname on remote hosts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Run hostname command
+      ansible.builtin.command: hostname
+      register: hostname_out
+
+    - name: Show hostname
+      ansible.builtin.debug:
+        msg: "Hostname: {{ hostname_out.stdout }}"

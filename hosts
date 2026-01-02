@@ -1,0 +1,2 @@
+[testservers]
+ansible2.hlubina.com ansible_port=4242
