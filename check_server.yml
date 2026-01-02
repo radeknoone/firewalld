@@ -51,5 +51,5 @@
     - name: Fail if time difference exceeds tolerance
       ansible.builtin.fail:
         msg: "Time difference ({{ time_diff_abs }}s) exceeds tolerance of {{ time_tolerance_seconds }}s"
-      when: time_diff_abs > time_tolerance_seconds
+      when: time_diff_abs | int > time_tolerance_seconds
 
