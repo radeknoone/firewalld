@@ -50,8 +50,8 @@
         - name: Compare /tmp directory listings
           ansible.builtin.shell: "diff {{ playbook_dir }}/tmp_dir_lists/{{ groups['testservers'][0] }}_tmp_dir_list.txt {{ playbook_dir }}/tmp_dir_lists/{{ groups['testservers'][1] }}_tmp_dir_list.txt"
           register: diff_result
-          ignore_errors: yes
           delegate_to: localhost
+          failed_when: diff_result.rc == 2
 
         - name: Print /tmp directory differences
           ansible.builtin.debug:
