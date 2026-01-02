@@ -38,6 +38,15 @@
             dest: "{{ playbook_dir }}/tmp_dir_lists/{{ inventory_hostname }}_tmp_dir_list.txt"
             flat: yes
 
+        - name: Compare /tmp directory listings
+          ansible.builtin.shell: "diff {{ playbook_dir }}/tmp_dir_lists/ansible.hlubina.com_tmp_dir_list.txt {{ playbook_dir }}/tmp_dir_lists/ansible2.hlubina.com_tmp_dir_list.txt"
+          register: diff_result
+          ignore_errors: yes
+
+        - name: Print /tmp directory differences
+          ansible.builtin.debug:
+            var: diff_result.stdout_lines
+
         - name: Print script STDERR (if any, multiline)
           ansible.builtin.debug:
             var: script_result.stderr_lines
