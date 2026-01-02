@@ -29,7 +29,7 @@
 
     - name: Set online_epoch fact
       ansible.builtin.set_fact:
-        online_epoch: "{{ worldtime.json.currentFileTime | int // 10000000 - 11644473600 }}"
+        online_epoch: "{{ (worldtime.json.currentFileTime | int // 10000000) - 11644473600 }}"
 
     - name: Set server_epoch fact
       ansible.builtin.set_fact:
@@ -37,8 +37,8 @@
 
     - name: Compute time difference
       ansible.builtin.set_fact:
-        time_diff: "{{ server_epoch - online_epoch }}"
-        time_diff_abs: "{{ (server_epoch - online_epoch) | abs }}"
+        time_diff: "{{ server_epoch | int - online_epoch | int }}"
+        time_diff_abs: "{{ (server_epoch | int - online_epoch | int) | abs }}"
 
     - name: Show time comparison
       ansible.builtin.debug:
