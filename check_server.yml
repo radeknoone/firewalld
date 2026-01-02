@@ -1,23 +1,13 @@
 - name: Print hostname and compare time with online source
   hosts: all
-  gather_facts: false
+  gather_facts: true
   vars:
     time_tolerance_seconds: 10
 
   tasks:
-    - name: Get hostname
-      ansible.builtin.command: hostname
-      register: hostname_out
-      changed_when: false
-
     - name: Show hostname
       ansible.builtin.debug:
-        msg: "Hostname: {{ hostname_out.stdout }}"
-
-    - name: Get server time (epoch seconds, UTC)
-      ansible.builtin.command: date -u +%s
-      register: server_time
-      changed_when: false
+        msg: "Hostname: {{ ansible_hostname }}"
 
     - name: Get online time (worldclockapi.com)
       ansible.builtin.uri:
@@ -35,7 +25,7 @@
 
     - name: Compute time difference
       ansible.builtin.set_fact:
-        time_diff_abs: "{{ ((server_time.stdout | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600)) | abs }}"
+        time_diff_abs: "{{ (ansible_date_time.epoch | int) - (((worldtime.json.currentFileTime | int) // 10000000) - 11644473600) | abs }}"
 
     - name: Show time comparison
       ansible.builtin.debug:
