@@ -14,6 +14,10 @@
       echo "Čas: $(date -Iseconds)"
       echo "Uživatel: $(whoami)"
   tasks:
+    - name: Ensure tmp_dir_lists directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/tmp_dir_lists"
+        state: directory
     - name: Upload, execute and print output; always clean up
       block:
         - name: Upload inline script to remote host
