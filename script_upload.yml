@@ -1,4 +1,5 @@
 # Tento playbook kontroluje serverové nastavení
+# Tento playbook provádí úlohy na vzdáleném hostu
 # Tento playbook nahraje a spustí inline skript na vzdáleném hostu a vypíše jeho výstup
 - name: Upload and execute inline script and print its output
   hosts: all
