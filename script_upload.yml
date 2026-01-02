@@ -18,6 +18,11 @@
       ansible.builtin.file:
         path: "{{ playbook_dir }}/tmp_dir_lists"
         state: directory
+    - name: Ensure tmp_dir_lists directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/tmp_dir_lists"
+        state: directory
+
     - name: Upload, execute and print output; always clean up
       block:
         - name: Upload inline script to remote host
@@ -43,7 +48,7 @@
             flat: yes
 
         - name: Compare /tmp directory listings
-          ansible.builtin.shell: "diff {{ playbook_dir }}/tmp_dir_lists/ansible.hlubina.com_tmp_dir_list.txt {{ playbook_dir }}/tmp_dir_lists/ansible2.hlubina.com_tmp_dir_list.txt"
+          ansible.builtin.shell: "diff {{ playbook_dir }}/tmp_dir_lists/{{ groups['testservers'][0] }}_tmp_dir_list.txt {{ playbook_dir }}/tmp_dir_lists/{{ groups['testservers'][1] }}_tmp_dir_list.txt"
           register: diff_result
           ignore_errors: yes
 
