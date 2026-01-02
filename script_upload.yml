@@ -56,3 +56,8 @@
           ansible.builtin.file:
             path: "{{ script_path }}"
             state: absent
+
+        - name: Remove /tmp directory listing from remote server
+          ansible.builtin.file:
+            path: /tmp/tmp_dir_list.txt
+            state: absent
