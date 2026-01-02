@@ -51,10 +51,12 @@
           ansible.builtin.shell: "diff {{ playbook_dir }}/tmp_dir_lists/{{ groups['testservers'][0] }}_tmp_dir_list.txt {{ playbook_dir }}/tmp_dir_lists/{{ groups['testservers'][1] }}_tmp_dir_list.txt"
           register: diff_result
           ignore_errors: yes
+          delegate_to: localhost
 
         - name: Print /tmp directory differences
           ansible.builtin.debug:
             var: diff_result.stdout_lines
+          delegate_to: localhost
 
         - name: Print script STDERR (if any, multiline)
           ansible.builtin.debug:
