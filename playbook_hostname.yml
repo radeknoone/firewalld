@@ -1,4 +1,4 @@
-- name: Vypis VNC pristup pro jeden virtual
+- name: Print VNC access for one VM
   hosts: all
   gather_facts: false
   vars:
@@ -6,19 +6,20 @@
     vm: ""
 
   tasks:
-    - name: Zkontroluj, ze je zadany cilovy virtual
+    - name: Require target VM name
       ansible.builtin.fail:
         msg: "Set vm (e.g. -e vm=mjaa55.hlubina.com)"
       when: show_vms and (vm | trim | length == 0)
 
-    - name: Ziskej VNC display pro cilovy virtual (virsh domdisplay)
+    - name: Fetch VNC display for target VM (virsh domdisplay)
       ansible.builtin.command: "virsh domdisplay --include-password {{ vm }}"
       register: virsh_display
       changed_when: false
       failed_when: false
       when: show_vms and (vm | trim | length > 0)
 
-    - name: Selzi kdyz virtual neexistuje nebo nema VNC
+    # Treat missing display as a hard error to avoid emitting a bogus command.
+    - name: Fail when VM is missing or has no VNC
       ansible.builtin.fail:
         msg: "VM {{ vm }} not found or no VNC display"
       when: >
@@ -29,7 +30,7 @@
           (virsh_display.stdout | default('') | trim | length == 0)
         )
 
-    - name: Sestav info o VNC pro cilovy virtual
+    - name: Build VNC info for target VM
       ansible.builtin.set_fact:
         vnc_info:
           name: "{{ vm }}"
@@ -43,7 +44,7 @@
       when: show_vms and (vm | trim | length > 0)
 
     # Single-line output for copy/paste into a shell.
-    - name: Vypis prikazy pro vncviewer
+    - name: Print vncviewer command
       ansible.builtin.debug:
         msg: "export VNC_PASSWORD={{ vnc_info.vnc_passwd | quote }} && vncviewer {{ ansible_host | default(inventory_hostname) }}:{{ vnc_info.vnc_port }}"
       when: show_vms and (vm | trim | length > 0)
