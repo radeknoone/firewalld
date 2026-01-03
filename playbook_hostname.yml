@@ -18,6 +18,17 @@
       failed_when: false
       when: show_vms and (vm | trim | length > 0)
 
+    - name: Selzi kdyz virtual neexistuje nebo nema VNC
+      ansible.builtin.fail:
+        msg: "VM {{ vm }} not found or no VNC display"
+      when: >
+        show_vms and
+        (vm | trim | length > 0) and
+        (
+          (virsh_display.rc | default(1) | int) != 0 or
+          (virsh_display.stdout | default('') | trim | length == 0)
+        )
+
     - name: Sestav info o VNC pro cilovy virtual
       ansible.builtin.set_fact:
         vnc_info:
