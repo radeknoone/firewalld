@@ -3,25 +3,25 @@
   gather_facts: false
   vars:
     show_vms: true
-    target_vm: ""
+    vm: ""
 
   tasks:
     - name: Zkontroluj, ze je zadany cilovy virtual
       ansible.builtin.fail:
-        msg: "Nastav target_vm (napr. -e target_vm=mjaa55.hlubina.com)"
-      when: show_vms and (target_vm | trim | length == 0)
+        msg: "Set vm (e.g. -e vm=mjaa55.hlubina.com)"
+      when: show_vms and (vm | trim | length == 0)
 
     - name: Ziskej VNC display pro cilovy virtual (virsh domdisplay)
-      ansible.builtin.command: "virsh domdisplay --include-password {{ target_vm }}"
+      ansible.builtin.command: "virsh domdisplay --include-password {{ vm }}"
       register: virsh_display
       changed_when: false
       failed_when: false
-      when: show_vms and (target_vm | trim | length > 0)
+      when: show_vms and (vm | trim | length > 0)
 
     - name: Sestav info o VNC pro cilovy virtual
       ansible.builtin.set_fact:
         vnc_info:
-          name: "{{ target_vm }}"
+          name: "{{ vm }}"
           vnc_port: "{{ vnc_port }}"
           vnc_passwd: "{{ vnc_passwd }}"
           display: "{{ display }}"
@@ -29,10 +29,10 @@
         display: "{{ virsh_display.stdout | default('') | trim }}"
         vnc_port: "{{ (display | regex_search(':(\\d+)$') | default('')) | regex_replace('^:', '') | default('n/a') }}"
         vnc_passwd: "{{ (display | regex_search('vnc://:([^@]+)@') | default('')) | regex_replace('^vnc://:', '') | regex_replace('@$', '') | default('n/a') }}"
-      when: show_vms and (target_vm | trim | length > 0)
+      when: show_vms and (vm | trim | length > 0)
 
-    # Jednoradkovy vystup pro copy/paste do shellu.
+    # Single-line output for copy/paste into a shell.
     - name: Vypis prikazy pro vncviewer
       ansible.builtin.debug:
         msg: "export VNC_PASSWORD={{ vnc_info.vnc_passwd | quote }} && vncviewer {{ ansible_host | default(inventory_hostname) }}:{{ vnc_info.vnc_port }}"
-      when: show_vms and (target_vm | trim | length > 0)
+      when: show_vms and (vm | trim | length > 0)
