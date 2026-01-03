@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$1" != "domdisplay" ]]; then
+  echo "unsupported command" >&2
+  exit 2
+fi
+
+if [[ "${2:-}" != "--include-password" ]]; then
+  echo "missing --include-password" >&2
+  exit 2
+fi
+
+vm="${3:-}"
+case "$vm" in
+  test-vm)
+    echo "vnc://:Secr3t@localhost:12"
+    ;;
+  weird-pass)
+    echo "vnc://:p@ss;w0rd@localhost:7"
+    ;;
+  missing-vm)
+    exit 1
+    ;;
+  *)
+    exit 1
+    ;;
+esac
