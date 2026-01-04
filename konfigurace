@@ -1,0 +1,5 @@
+# Aider config
+model: gpt-5.2-codex
+openai-api-key: YOUR_OPENAI_API_KEY
+openai-org: YOUR_OPENAI_ORG
+openai-project: YOUR_OPENAI_PROJECT
